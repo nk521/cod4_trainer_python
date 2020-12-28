@@ -52,4 +52,8 @@ if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctyp
 else:
     print("something fucked up")
 
+buffer = ctypes.c_char_p(chr(10).encode())
+a = ctypes.windll.kernel32.WriteProcessMemory(processHandle, address, buffer, ctypes.sizeof(ctypes.c_byte), None)
+print(a)
+
 ctypes.windll.kernel32.CloseHandle(processHandle)
