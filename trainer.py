@@ -1,11 +1,13 @@
-from ctypes import *
-from ctypes.wintypes import *
+import ctypes
+import ctypes.wintypes
 import sys
+
+PROCESS_ALL_ACCESS = 0x1F0FFF
 
 # this is to check if current user is an admin or not
 # https://stackoverflow.com/a/15774626
 def isAdmin():
-    class SID_IDENTIFIER_AUTHORITY(Structure):
+    class SID_IDENTIFIER_AUTHORITY(ctypes.Structure):
         _fields_ = [
             ("byte0", ctypes.c_byte),
             ("byte1", ctypes.c_byte),
@@ -38,5 +40,16 @@ if not isAdmin():
     print("Please run the program as an administrator!")
     sys.exit()
 
+pid = int(sys.argv[1])
+processHandle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
 
+address = 0x00000
+buffer = ctypes.c_buffer(4)
 
+if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctypes.sizeof(buffer), None):
+    print(ord(buffer.value.decode()))
+
+else:
+    print("something fucked up")
+
+ctypes.windll.kernel32.CloseHandle(processHandle)
