@@ -1,3 +1,15 @@
+# BYTE      = c_ubyte
+# WORD      = c_ushort
+# DWORD     = c_ulong
+# LPBYTE    = POINTER(c_ubyte)
+# LPTSTR    = POINTER(c_char) 
+# HANDLE    = c_void_p
+# PVOID     = c_void_p
+# LPVOID    = c_void_p
+# UNIT_PTR  = c_ulong
+# SIZE_T    = c_ulong
+
+
 import ctypes
 import ctypes.wintypes
 import sys
@@ -40,20 +52,73 @@ if not isAdmin():
     print("Please run the program as an administrator!")
     sys.exit()
 
+
+def getBaseAddress(pid, processHandle, executableName = None):
+    class MODULEINFO(ctypes.Structure):
+        _fields_ = [
+            ("baseOfDll", ctypes.c_void_p),
+            ("sizeOfImage", ctypes.c_ulong),
+            ("entryPoint", ctypes.c_void_p),
+        ]
+
+    # sometimes currModule is just empty
+    # this is why I included a fix executable name
+    if not executableName:
+        currModule = ctypes.create_string_buffer(2048)
+        currModuleCount = ctypes.c_ulong(ctypes.sizeof(currModule))
+        ctypes.windll.psapi.GetProcessImageFileNameA(processHandle, ctypes.byref(currModule), ctypes.byref(currModuleCount))
+    
+        if not currModule.value:
+            print("[!] Restart the program!")
+            sys.exit(-1)
+
+    hModulesArray = (ctypes.c_void_p * 1024)()
+    cbNeeded = ctypes.c_ulong()
+    ctypes.windll.psapi.EnumProcessModules(processHandle, hModulesArray, ctypes.sizeof(hModulesArray), ctypes.byref(cbNeeded))
+
+    for hModule_ in hModulesArray:
+        if not None:
+            try:
+                cPath = ctypes.create_string_buffer(1024)
+                ctypes.windll.psapi.GetModuleFileNameExA(processHandle, hModule_, cPath, ctypes.c_ulong(1024))
+
+                if not executableName:
+                    if currModule.value.decode().split("\\")[-1] == cPath.value.decode().split("\\")[-1]:
+                        hModule = hModule_
+                        break
+                else:
+                    if executableName.lower() == cPath.value.decode().split("\\")[-1].lower():
+                        hModule = hModule_
+                        break
+            except:
+                pass
+
+    moduleInfoObject = MODULEINFO()
+    ctypes.windll.psapi.GetModuleInformation(processHandle, hModule, ctypes.byref(moduleInfoObject), ctypes.sizeof(MODULEINFO))
+    
+    base = moduleInfoObject.baseOfDll
+    return base, executableName if executableName else currModule.value.decode().split("\\")[-1]
+
+
 pid = int(sys.argv[1])
+executableName = None if len(sys.argv) < 3 else sys.argv[2]
 processHandle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+base, moduleName = getBaseAddress(pid, processHandle, executableName=executableName)
 
-address = 0x00000
-buffer = ctypes.c_buffer(4)
+print(f"[+] Base of {moduleName} is {hex(base)}")
 
-if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctypes.sizeof(buffer), None):
-    print(ord(buffer.value.decode()))
+godMode = 0x881548
 
-else:
-    print("something fucked up")
+# buffer = ctypes.c_buffer(4)
 
-buffer = ctypes.c_char_p(chr(10).encode())
-a = ctypes.windll.kernel32.WriteProcessMemory(processHandle, address, buffer, ctypes.sizeof(ctypes.c_byte), None)
-print(a)
+# if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctypes.sizeof(buffer), None):
+#     print(ord(buffer.value.decode()))
+
+# else:
+#     print("something fucked up")
+
+buffer = ctypes.c_char_p(chr(1).encode())
+input("Press any key to enable god mode!")
+ctypes.windll.kernel32.WriteProcessMemory(processHandle, base+godMode, buffer, ctypes.sizeof(ctypes.c_byte), None)
 
 ctypes.windll.kernel32.CloseHandle(processHandle)
