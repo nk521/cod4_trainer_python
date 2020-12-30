@@ -2,24 +2,28 @@
 # WORD      = c_ushort
 # DWORD     = c_ulong
 # LPBYTE    = POINTER(c_ubyte)
-# LPTSTR    = POINTER(c_char) 
+# LPTSTR    = POINTER(c_char)
 # HANDLE    = c_void_p
 # PVOID     = c_void_p
 # LPVOID    = c_void_p
 # UNIT_PTR  = c_ulong
 # SIZE_T    = c_ulong
 
+from pyWinhook import HookManager
+import pythoncom
 
 import ctypes
 import ctypes.wintypes
 import sys
-import curses
+
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
 GODMODE_BASE = 0x881548
 
 # this is to check if current user is an admin or not
 # https://stackoverflow.com/a/15774626
+
+
 def isAdmin():
     class SID_IDENTIFIER_AUTHORITY(ctypes.Structure):
         _fields_ = [
@@ -51,7 +55,7 @@ def isAdmin():
         ctypes.windll.advapi32.FreeSid(administrators_group)
 
 
-def getBaseAddress(pid, processHandle, executableName = None):
+def getBaseAddress(pid, processHandle, executableName=None):
     class MODULEINFO(ctypes.Structure):
         _fields_ = [
             ("baseOfDll", ctypes.c_void_p),
@@ -64,21 +68,24 @@ def getBaseAddress(pid, processHandle, executableName = None):
     if not executableName:
         currModule = ctypes.create_string_buffer(2048)
         currModuleCount = ctypes.c_ulong(ctypes.sizeof(currModule))
-        ctypes.windll.psapi.GetProcessImageFileNameA(processHandle, ctypes.byref(currModule), ctypes.byref(currModuleCount))
-    
+        ctypes.windll.psapi.GetProcessImageFileNameA(
+            processHandle, ctypes.byref(currModule), ctypes.byref(currModuleCount))
+
         if not currModule.value:
             print("[!] Restart the program!")
             sys.exit(-1)
 
     hModulesArray = (ctypes.c_void_p * 1024)()
     cbNeeded = ctypes.c_ulong()
-    ctypes.windll.psapi.EnumProcessModules(processHandle, hModulesArray, ctypes.sizeof(hModulesArray), ctypes.byref(cbNeeded))
+    ctypes.windll.psapi.EnumProcessModules(
+        processHandle, hModulesArray, ctypes.sizeof(hModulesArray), ctypes.byref(cbNeeded))
 
     for hModule_ in hModulesArray:
         if not None:
             try:
                 cPath = ctypes.create_string_buffer(1024)
-                ctypes.windll.psapi.GetModuleFileNameExA(processHandle, hModule_, cPath, ctypes.c_ulong(1024))
+                ctypes.windll.psapi.GetModuleFileNameExA(
+                    processHandle, hModule_, cPath, ctypes.c_ulong(1024))
 
                 if not executableName:
                     if currModule.value.decode().split("\\")[-1] == cPath.value.decode().split("\\")[-1]:
@@ -92,57 +99,62 @@ def getBaseAddress(pid, processHandle, executableName = None):
                 pass
 
     moduleInfoObject = MODULEINFO()
-    ctypes.windll.psapi.GetModuleInformation(processHandle, hModule, ctypes.byref(moduleInfoObject), ctypes.sizeof(MODULEINFO))
-    
+    ctypes.windll.psapi.GetModuleInformation(processHandle, hModule, ctypes.byref(
+        moduleInfoObject), ctypes.sizeof(MODULEINFO))
+
     base = moduleInfoObject.baseOfDll
     return base, executableName if executableName else currModule.value.decode().split("\\")[-1]
 
 
-def toggle_godmode(processHandle, base):
+def toggleGodMode(processHandle, base):
     godmode = base + GODMODE_BASE
 
     buffer = ctypes.create_string_buffer(1)
-    ctypes.windll.kernel32.ReadProcessMemory(processHandle, godmode, buffer, ctypes.sizeof(buffer), None)
-    
+    ctypes.windll.kernel32.ReadProcessMemory(
+        processHandle, godmode, buffer, ctypes.sizeof(buffer), None)
+
     current_godmode_value = buffer.value.decode()
-    
+
     if not current_godmode_value:
         current_godmode_value = 0
     else:
         current_godmode_value = 1
 
     buffer = ctypes.c_char_p(chr(current_godmode_value ^ 1).encode())
-    ctypes.windll.kernel32.WriteProcessMemory(processHandle, godmode, buffer, ctypes.sizeof(ctypes.c_byte), None)
+    ctypes.windll.kernel32.WriteProcessMemory(
+        processHandle, godmode, buffer, ctypes.sizeof(ctypes.c_byte), None)
 
 
-def main(scr, *args):
-    curses.noecho()
-    scr.keypad(1)
-    scr.border(0)
-    
-    pid = int(sys.argv[1])
-    executableName = None if len(sys.argv) < 3 else sys.argv[2]
-    
-    processHandle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
-    base, moduleName = getBaseAddress(pid, processHandle, executableName=executableName)
+def cheatDispatcher(event):
+    # F1..F12 -> 112..123
+    ch = event.KeyID
 
-    text = 'COD 4 Trainer'
-    scr.addstr(5, curses.COLS // 2 - len(text) // 2, text, curses.A_STANDOUT)
-    scr.addstr(6, 5, f"[+] Base of {moduleName} is {hex(base)}", curses.A_STANDOUT)
-    
-    while True:
-        ch = scr.getch()
-        
-        if ch == ord("q") or ch == 0x03:
-            ctypes.windll.kernel32.CloseHandle(processHandle)
-            sys.exit()
+    if ch == 123:
+        ctypes.windll.kernel32.CloseHandle(processHandle)
+        hm.UnhookKeyboard()
+        sys.exit()
 
-        if ch == 0x07:
-            toggle_godmode(processHandle, base)
+    if ch == 122:
+        toggleGodMode(processHandle, base)
+
+    return True
+
 
 if not isAdmin():
     print("Please run the program as an administrator!")
     sys.exit()
 
-curses.wrapper(main)
-ctypes.windll.kernel32.CloseHandle(processHandle)
+
+hm = HookManager()
+hm.KeyDown = cheatDispatcher
+hm.HookKeyboard()
+
+pid = int(sys.argv[1])
+executableName = None if len(sys.argv) < 3 else sys.argv[2]
+
+processHandle = ctypes.windll.kernel32.OpenProcess(
+    PROCESS_ALL_ACCESS, False, pid)
+base, moduleName = getBaseAddress(
+    pid, processHandle, executableName=executableName)
+
+pythoncom.PumpMessages()
