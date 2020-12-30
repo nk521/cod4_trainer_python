@@ -14,10 +14,9 @@ import ctypes
 import ctypes.wintypes
 import sys
 import curses
-import _curses
-import binascii
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
+GODMODE_BASE = 0x881548
 
 # this is to check if current user is an admin or not
 # https://stackoverflow.com/a/15774626
@@ -100,8 +99,7 @@ def getBaseAddress(pid, processHandle, executableName = None):
 
 
 def toggle_godmode(processHandle, base):
-    godmode_base = 0x881548
-    godmode = base + godmode_base
+    godmode = base + GODMODE_BASE
 
     buffer = ctypes.create_string_buffer(1)
     ctypes.windll.kernel32.ReadProcessMemory(processHandle, godmode, buffer, ctypes.sizeof(buffer), None)
@@ -148,18 +146,3 @@ if not isAdmin():
 
 curses.wrapper(main)
 ctypes.windll.kernel32.CloseHandle(processHandle)
-# godMode = 0x881548
-
-# # buffer = ctypes.c_buffer(4)
-
-# if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctypes.sizeof(buffer), None):
-#     print(ord(buffer.value.decode()))
-
-# # else:
-# #     print("something fucked up")
-
-# buffer = ctypes.c_char_p(chr(1).encode())
-# input("Press any key to enable god mode!")
-# ctypes.windll.kernel32.WriteProcessMemory(processHandle, base+godMode, buffer, ctypes.sizeof(ctypes.c_byte), None)
-
-# ctypes.windll.kernel32.CloseHandle(processHandle)
