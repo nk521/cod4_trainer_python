@@ -19,6 +19,8 @@ import sys
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
 GODMODE_BASE = 0x881548
+NOCLIP_BASE = 0xA18D54
+NORELOAD_BASE = 0xF42F10
 
 # this is to check if current user is an admin or not
 # https://stackoverflow.com/a/15774626
@@ -106,23 +108,21 @@ def getBaseAddress(pid, processHandle, executableName=None):
     return base, executableName if executableName else currModule.value.decode().split("\\")[-1]
 
 
-def toggleGodMode(processHandle, base):
-    godmode = base + GODMODE_BASE
-
+def toggleByte(processHandle, base):
     buffer = ctypes.create_string_buffer(1)
     ctypes.windll.kernel32.ReadProcessMemory(
-        processHandle, godmode, buffer, ctypes.sizeof(buffer), None)
+        processHandle, base, buffer, ctypes.sizeof(buffer), None)
 
-    current_godmode_value = buffer.value.decode()
+    current_value = buffer.value.decode()
 
-    if not current_godmode_value:
-        current_godmode_value = 0
+    if not current_value:
+        current_value = 0
     else:
-        current_godmode_value = 1
+        current_value = 1
 
-    buffer = ctypes.c_char_p(chr(current_godmode_value ^ 1).encode())
+    buffer = ctypes.c_char_p(chr(current_value ^ 1).encode())
     ctypes.windll.kernel32.WriteProcessMemory(
-        processHandle, godmode, buffer, ctypes.sizeof(ctypes.c_byte), None)
+        processHandle, base, buffer, ctypes.sizeof(ctypes.c_byte), None)
 
 
 def cheatDispatcher(event):
@@ -135,7 +135,13 @@ def cheatDispatcher(event):
         sys.exit()
 
     if ch == 122:
-        toggleGodMode(processHandle, base)
+        toggleByte(processHandle, base + GODMODE_BASE)
+
+    if ch == 121:
+        toggleByte(processHandle, base + NOCLIP_BASE)
+
+    if ch == 120:
+        toggleByte(processHandle, base + NORELOAD_BASE)
 
     return True
 
@@ -145,10 +151,6 @@ if not isAdmin():
     sys.exit()
 
 
-hm = HookManager()
-hm.KeyDown = cheatDispatcher
-hm.HookKeyboard()
-
 pid = int(sys.argv[1])
 executableName = None if len(sys.argv) < 3 else sys.argv[2]
 
@@ -157,4 +159,7 @@ processHandle = ctypes.windll.kernel32.OpenProcess(
 base, moduleName = getBaseAddress(
     pid, processHandle, executableName=executableName)
 
+hm = HookManager()
+hm.KeyDown = cheatDispatcher
+hm.HookKeyboard()
 pythoncom.PumpMessages()
