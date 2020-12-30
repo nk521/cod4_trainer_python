@@ -13,6 +13,9 @@
 import ctypes
 import ctypes.wintypes
 import sys
+import curses
+import _curses
+import binascii
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
 
@@ -47,10 +50,6 @@ def isAdmin():
 
     finally:
         ctypes.windll.advapi32.FreeSid(administrators_group)
-
-if not isAdmin():
-    print("Please run the program as an administrator!")
-    sys.exit()
 
 
 def getBaseAddress(pid, processHandle, executableName = None):
@@ -100,25 +99,67 @@ def getBaseAddress(pid, processHandle, executableName = None):
     return base, executableName if executableName else currModule.value.decode().split("\\")[-1]
 
 
-pid = int(sys.argv[1])
-executableName = None if len(sys.argv) < 3 else sys.argv[2]
-processHandle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
-base, moduleName = getBaseAddress(pid, processHandle, executableName=executableName)
+def toggle_godmode(processHandle, base):
+    godmode_base = 0x881548
+    godmode = base + godmode_base
 
-print(f"[+] Base of {moduleName} is {hex(base)}")
+    buffer = ctypes.create_string_buffer(1)
+    ctypes.windll.kernel32.ReadProcessMemory(processHandle, godmode, buffer, ctypes.sizeof(buffer), None)
+    
+    current_godmode_value = buffer.value.decode()
+    
+    if not current_godmode_value:
+        current_godmode_value = 0
+    else:
+        current_godmode_value = 1
 
-godMode = 0x881548
+    buffer = ctypes.c_char_p(chr(current_godmode_value ^ 1).encode())
+    ctypes.windll.kernel32.WriteProcessMemory(processHandle, godmode, buffer, ctypes.sizeof(ctypes.c_byte), None)
 
-# buffer = ctypes.c_buffer(4)
+
+def main(scr, *args):
+    curses.noecho()
+    scr.keypad(1)
+    scr.border(0)
+    
+    pid = int(sys.argv[1])
+    executableName = None if len(sys.argv) < 3 else sys.argv[2]
+    
+    processHandle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+    base, moduleName = getBaseAddress(pid, processHandle, executableName=executableName)
+
+    text = 'COD 4 Trainer'
+    scr.addstr(5, curses.COLS // 2 - len(text) // 2, text, curses.A_STANDOUT)
+    scr.addstr(6, 5, f"[+] Base of {moduleName} is {hex(base)}", curses.A_STANDOUT)
+    
+    while True:
+        ch = scr.getch()
+        
+        if ch == ord("q") or ch == 0x03:
+            ctypes.windll.kernel32.CloseHandle(processHandle)
+            sys.exit()
+
+        if ch == 0x07:
+            toggle_godmode(processHandle, base)
+
+if not isAdmin():
+    print("Please run the program as an administrator!")
+    sys.exit()
+
+curses.wrapper(main)
+ctypes.windll.kernel32.CloseHandle(processHandle)
+# godMode = 0x881548
+
+# # buffer = ctypes.c_buffer(4)
 
 # if ctypes.windll.kernel32.ReadProcessMemory(processHandle, address, buffer, ctypes.sizeof(buffer), None):
 #     print(ord(buffer.value.decode()))
 
-# else:
-#     print("something fucked up")
+# # else:
+# #     print("something fucked up")
 
-buffer = ctypes.c_char_p(chr(1).encode())
-input("Press any key to enable god mode!")
-ctypes.windll.kernel32.WriteProcessMemory(processHandle, base+godMode, buffer, ctypes.sizeof(ctypes.c_byte), None)
+# buffer = ctypes.c_char_p(chr(1).encode())
+# input("Press any key to enable god mode!")
+# ctypes.windll.kernel32.WriteProcessMemory(processHandle, base+godMode, buffer, ctypes.sizeof(ctypes.c_byte), None)
 
-ctypes.windll.kernel32.CloseHandle(processHandle)
+# ctypes.windll.kernel32.CloseHandle(processHandle)
