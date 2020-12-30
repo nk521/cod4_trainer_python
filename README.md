@@ -1,3 +1,4 @@
 # COD4 Trainer
 
-depends on pywinhook, windows-curses, ctypes
+Depends on - 
+* pyWinhook -> https://github.com/Tungsteno74/pyWinhook/
