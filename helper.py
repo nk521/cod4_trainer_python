@@ -94,3 +94,12 @@ def getBaseAddress(pid, processHandle, executableName=None):
 
     base = moduleInfoObject.baseOfDll
     return base, executableName if executableName else currModule.value.decode().split("\\")[-1]
+
+
+def isDWMCompositionEnabled():
+    enabled = ctypes.c_bool(0)
+    ctypes.windll.dwmapi.DwmIsCompositionEnabled(ctypes.byref(enabled))
+    if not enabled:
+        print("[!] Please enable Windows Aero!")
+        return False
+    return True
