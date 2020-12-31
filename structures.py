@@ -3,6 +3,26 @@ import ctypes.wintypes
 
 WNDPROCTYPE = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.wintypes.HWND, ctypes.c_uint, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM)
 
+
+class SID_IDENTIFIER_AUTHORITY(ctypes.Structure):
+    _fields_ = [
+        ("byte0", ctypes.c_byte),
+        ("byte1", ctypes.c_byte),
+        ("byte2", ctypes.c_byte),
+        ("byte3", ctypes.c_byte),
+        ("byte4", ctypes.c_byte),
+        ("byte5", ctypes.c_byte),
+    ]
+
+
+class MODULEINFO(ctypes.Structure):
+    _fields_ = [
+        ("baseOfDll", ctypes.c_void_p),
+        ("sizeOfImage", ctypes.c_ulong),
+        ("entryPoint", ctypes.c_void_p),
+    ]
+
+
 class WNDCLASSEX(ctypes.Structure):
     _fields_ = [
         ("cbSize", ctypes.c_uint),

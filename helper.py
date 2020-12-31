@@ -2,6 +2,7 @@ import ctypes
 import ctypes.wintypes
 import sys
 
+from structures import MODULEINFO, SID_IDENTIFIER_AUTHORITY
 
 def getWindow(title="Call of Duty 4"):
     titleChar = ctypes.c_char_p(title.encode())
@@ -19,16 +20,6 @@ def getPid():
 # this is to check if current user is an admin or not
 # https://stackoverflow.com/a/15774626
 def isAdmin():
-    class SID_IDENTIFIER_AUTHORITY(ctypes.Structure):
-        _fields_ = [
-            ("byte0", ctypes.c_byte),
-            ("byte1", ctypes.c_byte),
-            ("byte2", ctypes.c_byte),
-            ("byte3", ctypes.c_byte),
-            ("byte4", ctypes.c_byte),
-            ("byte5", ctypes.c_byte),
-        ]
-
     nt_authority = SID_IDENTIFIER_AUTHORITY()
     nt_authority.byte5 = 5
 
@@ -50,13 +41,6 @@ def isAdmin():
 
 
 def getBaseAddress(pid, processHandle, executableName=None):
-    class MODULEINFO(ctypes.Structure):
-        _fields_ = [
-            ("baseOfDll", ctypes.c_void_p),
-            ("sizeOfImage", ctypes.c_ulong),
-            ("entryPoint", ctypes.c_void_p),
-        ]
-
     # sometimes currModule is just empty
     # this is why I included a fix executable name
     if not executableName:
