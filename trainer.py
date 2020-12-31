@@ -17,7 +17,8 @@ import ctypes.wintypes
 import sys
 
 from helper import *
-
+from overlay import *
+from structures import WNDCLASSEX, OVERLAY, MARGINS, WNDPROCTYPE
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
 GODMODE_BASE = 0x881548
@@ -83,8 +84,17 @@ if not pid:
 
 processHandle = ctypes.windll.kernel32.OpenProcess(
     PROCESS_ALL_ACCESS, False, pid)
-base, moduleName = getBaseAddress(
+base, moduleName, hModule = getBaseAddress(
     pid, processHandle, executableName=executableName)
+
+if isDWMCompositionEnabled():
+    overlayObj = OVERLAY()
+    if overlayInit(overlayObj):
+        WndProc = WNDPROCTYPE(PyWndProcedure)
+        if overlayCreateClass(WndProc, "Call of Duty 4", hModule, overlayObj):
+            # create window overlay now
+            # init directx here
+            pass
 
 print(f"[+] Base address for {moduleName} is {hex(base)}.")
 hm = HookManager()
