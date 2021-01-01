@@ -92,11 +92,11 @@ def isDWMCompositionEnabled():
         return False
     return True
 
-def MAKEINTRESOURCEA(i):
-    cast1 = ctypes.cast((ctypes.c_int*1)(i), ctypes.POINTER(ctypes.c_ushort)).contents
-    cast2 = ctypes.cast((ctypes.c_ushort*1)(cast1), ctypes.POINTER(ctypes.c_ulong)).contents
-    cast3 = ctypes.cast((ctypes.c_ulong*1)(cast2), ctypes.POINTER(ctypes.c_char_p)).contents
-    return cast3
+# def MAKEINTRESOURCEA(i):
+#     cast1 = ctypes.cast((ctypes.c_int*1)(i), ctypes.POINTER(ctypes.c_ushort)).contents
+#     cast2 = ctypes.cast((ctypes.c_ushort*1)(cast1), ctypes.POINTER(ctypes.c_ulong)).contents
+#     cast3 = ctypes.cast((ctypes.c_ulong*1)(cast2), ctypes.POINTER(ctypes.c_char_p)).contents
+#     return cast3
 
 
 def PyWndProcedure(hWnd, Msg, wParam, lParam):
