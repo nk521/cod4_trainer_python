@@ -52,3 +52,16 @@ def overlayInit(overlayObj):
 
     return True
 
+
+def overlayCreateWindow(overlayObj, hModule):
+    overlayObj.Window = ctypes.windll.user32.CreateWindowExA(win32con.WS_EX_TOPMOST | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT, overlayObj.Name, overlayObj.Name, win32con.WS_POPUP, 1, 1, overlayObj.Width, overlayObj.Height, 0, 0, hModule, 0)
+    if overlayObj:
+        ctypes.windll.user32.SetLayeredWindowAttributes(overlayObj.Window, ctypes.wintypes.RGB(0,0,0), 255, win32con.LWA_COLORKEY | win32con.LWA_ALPHA)
+        ctypes.windll.user32.ShowWindow(overlayObj.Window, win32con.SW_SHOW)
+        ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(overlayObj.Window, ctypes.byref(overlayObj.Margin))
+
+        return True
+    
+    else:
+        return False
+

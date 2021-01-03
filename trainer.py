@@ -15,6 +15,7 @@ import pythoncom
 import ctypes
 import ctypes.wintypes
 import sys
+import struct
 
 from helper import *
 from overlay import *
@@ -23,7 +24,6 @@ from structures import WNDCLASSEX, OVERLAY, MARGINS, WNDPROCTYPE
 PROCESS_ALL_ACCESS = 0x1F0FFF
 GODMODE_BASE = 0x881548
 NOCLIP_BASE = 0xA18D54
-NORELOAD_BASE = 0xF42F10
 
 
 def toggleByte(processHandle, base):
@@ -59,14 +59,21 @@ def cheatDispatcher(event):
         toggleByte(processHandle, base + NOCLIP_BASE)
 
     if ch == 120:
-        toggleByte(processHandle, base + NORELOAD_BASE)
+        buffer = ctypes.create_string_buffer(4)
+        ctypes.windll.kernel32.ReadProcessMemory(
+            processHandle, base + 0x102059C, buffer, ctypes.sizeof(buffer), None)
+        print(buffer.value)
+        ptr = struct.unpack("<i", buffer.value)[0]
+        ptr += 0xC
+
+        toggleByte(processHandle, ptr)
 
     return True
 
 
-if not isAdmin():
-    print("[!] Please run the program as an administrator!")
-    sys.exit()
+# if not isAdmin():
+#     print("[!] Please run the program as an administrator!")
+#     sys.exit()
 
 
 pid = None if len(sys.argv) < 2 else int(sys.argv[1])
@@ -91,10 +98,11 @@ if isDWMCompositionEnabled():
     overlayObj = OVERLAY()
     if overlayInit(overlayObj):
         WndProc = WNDPROCTYPE(PyWndProcedure)
-        if overlayCreateClass(WndProc, "Call of Duty 4", hModule, overlayObj):
-            # create window overlay now
-            # init directx here
-            pass
+        if overlayCreateClass(WndProc, "overlay", hModule, overlayObj):
+            if overlayCreateWindow(overlayObj, hModule):
+                print("works fine")
+                # init directx here
+                pass
 
 print(f"[+] Base address for {moduleName} is {hex(base)}.")
 hm = HookManager()
