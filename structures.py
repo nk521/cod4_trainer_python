@@ -1,5 +1,6 @@
 import ctypes
 import ctypes.wintypes
+import d3d
 
 WNDPROCTYPE = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.wintypes.HWND, ctypes.c_uint, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM)
 
@@ -61,3 +62,45 @@ class OVERLAY(ctypes.Structure):
         ("Message", ctypes.wintypes.MSG),
         ("Margin", MARGINS),
     ]
+
+# class D3DPRESENT_PARAMETERS(ctypes.Structure):
+#     _fields_ = (
+#         ('BackBufferWidth', ctypes.c_uint),
+#         ('BackBufferHeight', ctypes.c_uint),
+#         ('BackBufferFormat', ctypes.c_uint),
+#         ('BackBufferCount', ctypes.c_uint),
+#         ('MultiSampleType', ctypes.c_uint),
+#         ('MultiSampleQuality', ctypes.c_ulong),
+#         ('SwapEffect', ctypes.c_uint),
+#         ('hDeviceWindow', ctypes.wintypes.HWND),
+#         ('Windowed', ctypes.c_bool),
+#         ('EnableAutoDepthStencil', ctypes.c_bool),
+#         ('AutoDepthStencilFormat', ctypes.c_uint),
+#         ('Flags', ctypes.c_ulong),
+#         ('FullScreen_RefreshRateInHz', ctypes.c_uint),
+#         ('PresentationInterval', ctypes.c_uint)
+#     )
+
+
+# class DIRECTX(ctypes.Structure):
+#     _fields_ = [
+#         ("Object", ctypes.POINTER(d3d.IDirect3D9Ex)),
+#         ("Device", ctypes.POINTER(d3d.IDirect3DDevice9Ex)),
+#         ("Param", d3d.D3DPRESENT_PARAMETERS),
+#         ("Font", ctypes.POINTER(ctypes.c_ulong)),
+#         ("espFont", ctypes.POINTER(ctypes.c_ulong)),
+#         ("FontWarning", ctypes.POINTER(ctypes.c_ulong)),
+#         ("Line", ctypes.POINTER(ctypes.c_ulong)),
+#     ]
+
+class DIRECTX(ctypes.Structure):
+    _fields_ = [
+        ("Object", ctypes.c_void_p),
+        ("Device", ctypes.c_void_p),
+        # ("Param", d3d.D3DPRESENT_PARAMETERS),
+        ("Font", ctypes.c_void_p),
+        ("espFont", ctypes.c_void_p),
+        # ("FontWarning", ctypes.POINTER(ctypes.c_ulong)),
+        # ("Line", ctypes.POINTER(ctypes.c_ulong)),
+    ]
+

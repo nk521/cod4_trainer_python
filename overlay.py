@@ -5,7 +5,22 @@ import ctypes
 import ctypes.wintypes
 import sys
 import win32con
+import winerror
 
+import d3d
+
+D3D_SDK_VERSION  = 31 | 0x80000000
+
+D3DFMT_A8R8G8B8 = 21
+D3DPOOL_SYSTEMMEM = 2
+		
+D3DADAPTER_DEFAULT = 0
+D3DSWAPEFFECT_DISCARD = 1
+D3DDEVTYPE_HAL = 1
+D3DCREATE_SOFTWARE_VERTEXPROCESSING = 0x00000020
+
+D3DFMT_D16 = 80
+D3DMULTISAMPLE_NONE = 0
 
 def overlayCreateClass(winProc, windowName, hModule, overlayObj):
     overlayObj.Name = windowName.encode()
@@ -54,8 +69,8 @@ def overlayInit(overlayObj):
 
 
 def overlayCreateWindow(overlayObj, hModule):
-    overlayObj.Window = ctypes.windll.user32.CreateWindowExA(win32con.WS_EX_TOPMOST | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT, overlayObj.Name, overlayObj.Name, win32con.WS_POPUP, 1, 1, overlayObj.Width, overlayObj.Height, 0, 0, hModule, 0)
-    if overlayObj:
+    overlayObj.Window = ctypes.windll.user32.CreateWindowExA(win32con.WS_EX_TOPMOST | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT, overlayObj.Name.decode(), overlayObj.Name.decode(), win32con.WS_POPUP, 1, 1, overlayObj.Width, overlayObj.Height, 0, 0, hModule, 0)
+    if overlayObj.Window:
         ctypes.windll.user32.SetLayeredWindowAttributes(overlayObj.Window, ctypes.wintypes.RGB(0,0,0), 255, win32con.LWA_COLORKEY | win32con.LWA_ALPHA)
         ctypes.windll.user32.ShowWindow(overlayObj.Window, win32con.SW_SHOW)
         ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(overlayObj.Window, ctypes.byref(overlayObj.Margin))
@@ -65,3 +80,8 @@ def overlayCreateWindow(overlayObj, hModule):
     else:
         return False
 
+
+def directxInit(overlayObj, directxObj):
+    helperModule = ctypes.WinDLL("./classlink.dll")
+    directxObj.Device = helperModule.directxInit(overlayObj.Window, overlayObj.Width, overlayObj.Height)
+    return directxObj.Device

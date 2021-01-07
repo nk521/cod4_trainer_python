@@ -1,6 +1,7 @@
 import ctypes
 import ctypes.wintypes
 import sys
+import win32con
 
 from structures import MODULEINFO, SID_IDENTIFIER_AUTHORITY
 
@@ -97,16 +98,4 @@ def isDWMCompositionEnabled():
 #     cast2 = ctypes.cast((ctypes.c_ushort*1)(cast1), ctypes.POINTER(ctypes.c_ulong)).contents
 #     cast3 = ctypes.cast((ctypes.c_ulong*1)(cast2), ctypes.POINTER(ctypes.c_char_p)).contents
 #     return cast3
-
-
-def PyWndProcedure(hWnd, Msg, wParam, lParam):
-    if Msg == WM_PAINT:
-        # implement and run RenderDirectX to show menu
-        print("Render DirectX")
-
-    if Msg == WM_DESTROY:
-        windll.user32.PostQuitMessage(0)
-    else:
-        return windll.user32.DefWindowProcW(hWnd, Msg, wParam, lParam)
-    return 0
 
